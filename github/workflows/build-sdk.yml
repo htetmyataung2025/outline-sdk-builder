@@ -1,23 +1,29 @@
-name: Build H&E Feature APK
+name: Build Outline SDK AAR
 on:
-  workflow_dispatch:
+  workflow_dispatch: # လက်ဖြင့် run ရန် button ပေါ်လာအောင်
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Outline SDK
         uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-      - name: Upload APK
+          repository: OutlineFoundation/outline-sdk
+          path: outline-sdk
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build gomobile tools
+        run: |
+          cd outline-sdk/x
+          go build -o "$(pwd)/out/" golang.org/x/mobile/cmd/gomobile golang.org/x/mobile/cmd/gobind
+      - name: Build Android AAR
+        run: |
+          cd outline-sdk/x
+          PATH="$(pwd)/out:$PATH" gomobile bind -ldflags='-s -w' -target=android -androidapi=21 -o "$(pwd)/out/mobileproxy.aar" golang.getoutline.org/sdk/x/mobileproxy
+      - name: Upload AAR as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HnE-Feature-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: mobileproxy-aar
+          path: outline-sdk/x/out/mobileproxy.aar
